@@ -1,0 +1,1 @@
+tar -xjf repotemplate.tar.bz2
