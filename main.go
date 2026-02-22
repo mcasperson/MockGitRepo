@@ -76,7 +76,7 @@ func copyRepoToTemp(repoPath string, username string) (string, error) {
 		zap.String("repoPath", repoPath),
 		zap.String("username", username))
 
-	err := os.Mkdir(tempDir, 0700)
+	err := os.Mkdir(tempDir, 0770)
 	if err != nil {
 		logger.Error("Failed to create temp directory",
 			zap.String("tempDir", tempDir),
