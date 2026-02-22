@@ -21,7 +21,7 @@ Clone the repository (you must provide a username in the URL):
 
 ```bash
 cd /tmp
-git clone http://myusername@localhost:8080/platformhubrepo
+git clone http://myusername@localhost:8080/repo/platformhubrepo
 ```
 
 ## Building Locally

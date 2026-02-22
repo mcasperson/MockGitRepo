@@ -453,7 +453,7 @@ func main() {
 
 	// Git HTTP backend routes
 	// Match all Git HTTP protocol routes
-	router.Any("/*path", gitHTTPBackend)
+	router.Any("/repo/*path", gitHTTPBackend)
 
 	logger.Info("Starting HTTP server", zap.String("port", "8080"))
 	// Start the server on port 8080
