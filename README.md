@@ -33,7 +33,7 @@ This can be worked around by pointing the project to the repo `https://mockgitse
 * `projectrepo`: A sample Octopus CaC project configured to use the process template in `platformhubrepo`
 * `blank#`: Blank repos. Replace `#` with a number between 1 and 10.
 
-Repos are cloned with the commane:
+Repos are cloned with the command:
 
 ```bash
 git clone https://<unique user name>@mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/repo/<repo name>
