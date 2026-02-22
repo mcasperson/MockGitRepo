@@ -286,6 +286,53 @@ func getGitProjectRoot() string {
 	return gitProjectRoot
 }
 
+// checkTempDirSize checks if a temp directory exists and validates its size
+// Returns true if the request should continue, false if it should be aborted
+func checkTempDirSize(c *gin.Context, username string) bool {
+	tempDir := "/tmp/git-repo-" + username
+	if _, err := os.Stat(tempDir); err == nil {
+		// Directory exists, check its size
+		dirSize, err := getDirSize(tempDir)
+		if err != nil {
+			logger.Error("Failed to calculate temp directory size",
+				zap.String("tempDir", tempDir),
+				zap.Error(err))
+		} else {
+			logger.Debug("Temp directory size check",
+				zap.String("tempDir", tempDir),
+				zap.Int64("size", dirSize),
+				zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
+
+			// If size > 10MB, delete the directory
+			if dirSize > deleteTempDirSize {
+				logger.Warn("Temp directory exceeds 10MB, deleting",
+					zap.String("tempDir", tempDir),
+					zap.Int64("size", dirSize),
+					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
+				err := os.RemoveAll(tempDir)
+				if err != nil {
+					logger.Error("Failed to delete oversized temp directory",
+						zap.String("tempDir", tempDir),
+						zap.Error(err))
+				} else {
+					logger.Info("Deleted oversized temp directory",
+						zap.String("tempDir", tempDir))
+				}
+			} else if dirSize > maxTempDirSize {
+				// If size > 5MB but <= 10MB, return 400 error
+				logger.Warn("Temp directory exceeds 5MB limit",
+					zap.String("tempDir", tempDir),
+					zap.Int64("size", dirSize),
+					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)),
+					zap.String("clientIP", c.ClientIP()))
+				c.String(http.StatusBadRequest, "Temporary directory size exceeds maximum allowed size of 5MB")
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // limitTempDirs ensures there are no more than maxDirs temp directories
 // by deleting the oldest directories if the limit is exceeded
 func limitTempDirs(maxDirs int) {
@@ -405,46 +452,8 @@ func gitHTTPBackend(c *gin.Context) {
 	username := extractUsername(c)
 
 	// Check temporary directory size if it exists
-	tempDir := "/tmp/git-repo-" + username
-	if _, err := os.Stat(tempDir); err == nil {
-		// Directory exists, check its size
-		dirSize, err := getDirSize(tempDir)
-		if err != nil {
-			logger.Error("Failed to calculate temp directory size",
-				zap.String("tempDir", tempDir),
-				zap.Error(err))
-		} else {
-			logger.Debug("Temp directory size check",
-				zap.String("tempDir", tempDir),
-				zap.Int64("size", dirSize),
-				zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
-
-			// If size > 10MB, delete the directory
-			if dirSize > deleteTempDirSize {
-				logger.Warn("Temp directory exceeds 10MB, deleting",
-					zap.String("tempDir", tempDir),
-					zap.Int64("size", dirSize),
-					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
-				err := os.RemoveAll(tempDir)
-				if err != nil {
-					logger.Error("Failed to delete oversized temp directory",
-						zap.String("tempDir", tempDir),
-						zap.Error(err))
-				} else {
-					logger.Info("Deleted oversized temp directory",
-						zap.String("tempDir", tempDir))
-				}
-			} else if dirSize > maxTempDirSize {
-				// If size > 5MB but <= 10MB, return 400 error
-				logger.Warn("Temp directory exceeds 5MB limit",
-					zap.String("tempDir", tempDir),
-					zap.Int64("size", dirSize),
-					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)),
-					zap.String("clientIP", c.ClientIP()))
-				c.String(http.StatusBadRequest, "Temporary directory size exceeds maximum allowed size of 5MB")
-				return
-			}
-		}
+	if !checkTempDirSize(c, username) {
+		return
 	}
 
 	// Check request size limit (128KB)
