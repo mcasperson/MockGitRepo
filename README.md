@@ -78,7 +78,7 @@ cd platformhubrepo
 touch newfile.txt
 git add newfile.txt
 git commit -m "Add new file to test commit"
-git push origin master
+git push origin main
 ```
 
 ## Adding new sample repos
