@@ -18,7 +18,9 @@ import (
 
 const (
 	gitHTTPBackendPath = "/usr/libexec/git-core/git-http-backend"
-	maxRequestSize     = 128 * 1024 // 128KB in bytes
+	maxRequestSize     = 128 * 1024       // 128KB in bytes
+	maxTempDirSize     = 5 * 1024 * 1024  // 5MB in bytes
+	deleteTempDirSize  = 10 * 1024 * 1024 // 10MB in bytes
 )
 
 var logger *zap.Logger
@@ -260,6 +262,21 @@ func parseStatusCode(c *gin.Context) int {
 	return statusCode
 }
 
+// getDirSize calculates the total size of a directory in bytes
+func getDirSize(path string) (int64, error) {
+	var size int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return nil
+	})
+	return size, err
+}
+
 // getGitProjectRoot returns the git project root from environment variable or default
 func getGitProjectRoot() string {
 	gitProjectRoot := os.Getenv("GIT_PROJECT_ROOT")
@@ -288,6 +305,49 @@ func gitHTTPBackend(c *gin.Context) {
 
 	// Extract username from Authorization header
 	username := extractUsername(c)
+
+	// Check temporary directory size if it exists
+	tempDir := "/tmp/git-repo-" + username
+	if _, err := os.Stat(tempDir); err == nil {
+		// Directory exists, check its size
+		dirSize, err := getDirSize(tempDir)
+		if err != nil {
+			logger.Error("Failed to calculate temp directory size",
+				zap.String("tempDir", tempDir),
+				zap.Error(err))
+		} else {
+			logger.Debug("Temp directory size check",
+				zap.String("tempDir", tempDir),
+				zap.Int64("size", dirSize),
+				zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
+
+			// If size > 10MB, delete the directory
+			if dirSize > deleteTempDirSize {
+				logger.Warn("Temp directory exceeds 10MB, deleting",
+					zap.String("tempDir", tempDir),
+					zap.Int64("size", dirSize),
+					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)))
+				err := os.RemoveAll(tempDir)
+				if err != nil {
+					logger.Error("Failed to delete oversized temp directory",
+						zap.String("tempDir", tempDir),
+						zap.Error(err))
+				} else {
+					logger.Info("Deleted oversized temp directory",
+						zap.String("tempDir", tempDir))
+				}
+			} else if dirSize > maxTempDirSize {
+				// If size > 5MB but <= 10MB, return 400 error
+				logger.Warn("Temp directory exceeds 5MB limit",
+					zap.String("tempDir", tempDir),
+					zap.Int64("size", dirSize),
+					zap.Float64("sizeMB", float64(dirSize)/(1024*1024)),
+					zap.String("clientIP", c.ClientIP()))
+				c.String(http.StatusBadRequest, "Temporary directory size exceeds maximum allowed size of 5MB")
+				return
+			}
+		}
+	}
 
 	// Check request size limit (128KB)
 	if c.Request.ContentLength > maxRequestSize {
