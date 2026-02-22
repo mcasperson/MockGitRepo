@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -449,7 +450,10 @@ func gitHTTPBackend(c *gin.Context) {
 	}
 
 	// Extract username from Authorization header
-	username := extractUsername(c) + c.Param("id")
+	// Remove all non-alphanumeric characters from id using regex
+	reg := regexp.MustCompile("[^a-zA-Z0-9]+")
+	cleanedID := reg.ReplaceAllString(c.Param("id"), "")
+	username := extractUsername(c) + cleanedID
 
 	// Check temporary directory size if it exists
 	if !checkTempDirSize(c, username) {
