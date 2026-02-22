@@ -4,7 +4,7 @@ A boilerplate Go web application using the Gin framework.
 
 ## Prerequisites
 
-- Go 1.16 or higher
+- Go 1.21 or higher
 
 ## Installation
 
