@@ -107,3 +107,9 @@ git push origin main
 4. Run `git add .` and `git commit -m "Update sample repo"`
 5. Run `git config --bool core.bare true`
 6. Run `packtemplate.sh` to pack the template repo into `repotemplate.tar.bz2`
+
+These are the commands chained up:
+
+```bash
+git config --bool core.bare false; git add .; git commit -m "Update sample repo"; git config --bool core.bare true; cd ../..
+```
