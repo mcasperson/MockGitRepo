@@ -14,10 +14,10 @@ The `unpacktemplate.sh` and `packtemplate.sh` scripts are used to unpack and pac
 
 ## Using for Octopus Demos
 
-1. Configure the platform hub repo to https://mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/repo/platformhubrepo
+1. Configure the platform hub repo to https://mockgit.octopus.com/repo/platformhubrepo
 2. Use a unique username and any password
 3. Publish and share the process templates
-4. Create a CaC project pointing to https://mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/repo/projectrepo
+4. Create a CaC project pointing to https://mockgit.octopus.com/repo/projectrepo
 5. Use a unique username and any password
 6. You now how a sample platform hub and sample project that can be edited and committed to without affecting other users. The repos will be automatically cleaned up after 90 minutes of inactivity.
 
@@ -25,7 +25,7 @@ The `unpacktemplate.sh` and `packtemplate.sh` scripts are used to unpack and pac
 
 Octopus has a restriction that means a git repo can only be used by one project in any space.
 
-This can be worked around by pointing the project to the repo `https://mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/uniquerepo/id/projectrepo`, where `<id>` is a unique identifier (e.g. a number). This way, each project can have its own copy of the repo, and they won't conflict with each other.
+This can be worked around by pointing the project to the repo `https://mockgit.octopus.com/uniquerepo/id/projectrepo`, where `<id>` is a unique identifier (e.g. a number). This way, each project can have its own copy of the repo, and they won't conflict with each other.
 
 ## Repos
 
@@ -36,7 +36,7 @@ This can be worked around by pointing the project to the repo `https://mockgitse
 Repos are cloned with the command:
 
 ```bash
-git clone https://<unique user name>@mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/repo/<repo name>
+git clone https://<unique user name>@mockgit.octopus.com/repo/<repo name>
 ```
 
 ## Usage
@@ -79,7 +79,7 @@ docker run -d --name mockgitserver -p 8080:8080 mockgitserver
 This application is hosted on Azure. The follow commands demonstrate how you can clone and then interact with the repo.
 
 ```bash
-git clone https://blahblah@mockgitserver.orangegrass-c0938ea8.westus2.azurecontainerapps.io/repo/platformhubrepo
+git clone https://blahblah@mockgit.octopus.com/repo/platformhubrepo
 cd platformhubrepo
 touch newfile.txt
 git add newfile.txt
