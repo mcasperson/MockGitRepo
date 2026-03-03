@@ -1,4 +1,4 @@
-A mock Git server that create ephemeral Git repos for testing.
+A mock Git server that creates ephemeral Git repos for testing.
 
 Every request is against a fresh copy of a Git repo, so no changes are preserved. 
 
