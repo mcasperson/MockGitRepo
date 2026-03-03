@@ -79,6 +79,8 @@ touch newfile.txt
 git add newfile.txt
 git commit -m "Add new file to test commit"
 git push origin main
+git pull
+# Git will report a "forced update" with the changes reverted
 ```
 
 ## Adding new sample repos
