@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/base64"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"github.com/mcasperson/MockGitRepo/internal/domain/configuration"
 	"github.com/mcasperson/MockGitRepo/internal/domain/files"
 	"github.com/mcasperson/MockGitRepo/internal/domain/logging"
+	"github.com/mcasperson/MockGitRepo/internal/infrastructure"
 	"go.uber.org/zap"
 )
 
@@ -51,6 +54,14 @@ func GitHTTPBackend(c *gin.Context) {
 		return
 	}
 
+	username, password, err := extractUsernamePassword(c.GetHeader("Authorization"))
+
+	if err != nil {
+		logging.Logger.Error("Failed to extract username and password")
+		c.String(http.StatusInternalServerError, "Failed to extract username and password: %s", err)
+		return
+	}
+
 	// Get the original repository path
 	gitProjectRoot := configuration.GetGitProjectRoot()
 
@@ -67,18 +78,28 @@ func GitHTTPBackend(c *gin.Context) {
 		return
 	}
 
+	userExists, err := infrastructure.TestCredentials(username, password)
+
+	if err != nil {
+		logging.Logger.Error("Failed to test for user in database")
+		c.String(http.StatusInternalServerError, "Failed to test for user in database: %s", err)
+		return
+	}
+
 	// Defer deletion of the temporary directory
-	defer func() {
-		err := os.RemoveAll(tempRepoPath)
-		if err != nil {
-			logging.Logger.Error("Failed to delete temp directory",
-				zap.String("tempRepoPath", tempRepoPath),
-				zap.Error(err))
-		} else {
-			logging.Logger.Info("Deleted temp directory",
-				zap.String("tempRepoPath", tempRepoPath))
-		}
-	}()
+	if !userExists {
+		defer func() {
+			err := os.RemoveAll(tempRepoPath)
+			if err != nil {
+				logging.Logger.Error("Failed to delete temp directory",
+					zap.String("tempRepoPath", tempRepoPath),
+					zap.Error(err))
+			} else {
+				logging.Logger.Info("Deleted temp directory",
+					zap.String("tempRepoPath", tempRepoPath))
+			}
+		}()
+	}
 
 	logging.Logger.Debug("Executing git-http-backend",
 		zap.String("tempRepoPath", tempRepoPath))
@@ -218,4 +239,23 @@ func parseStatusCode(c *gin.Context) int {
 		}
 	}
 	return statusCode
+}
+
+func extractUsernamePassword(authorization string) (string, string, error) {
+	const prefix = "Basic "
+	if !strings.HasPrefix(authorization, prefix) {
+		return "", "", errors.New("invalid authorization header")
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authorization, prefix))
+	if err != nil {
+		return "", "", err
+	}
+
+	parts := strings.SplitN(string(decoded), ":", 2)
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid authorization header")
+	}
+
+	return parts[0], parts[1], nil
 }
