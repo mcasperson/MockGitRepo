@@ -29,24 +29,13 @@ func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (stri
 
 	var tempDir string
 	if fixedLocation {
-		tempDir = filepath.Join(os.TempDir(), fixedPath)
-
-		// Early exit if the directory already exists to avoid unnecessary copying and potential conflicts
-		_, err := os.Stat(tempDir)
+		var exists bool
+		var err error
+		tempDir, exists, err = getOrCreateFixedTempDir(fixedPath)
 		if err != nil {
-			// We expect an error when the directory doesn't exist,
-			// but if it's a different error, we should return it
-			if !errors.Is(err, os.ErrNotExist) {
-				return "", err
-			}
-
-			// Create the directory if it doesn't exist
-			mkdirErr := os.MkdirAll(tempDir, 0755)
-			if mkdirErr != nil {
-				return "", mkdirErr
-			}
-		} else {
-			// The directory already exists, so we can skip copying and return it directly
+			return "", err
+		}
+		if exists {
 			return tempDir, nil
 		}
 	} else {
@@ -78,6 +67,33 @@ func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (stri
 		zap.String("tempDir", tempDir))
 
 	return tempDir, nil
+}
+
+// getOrCreateFixedTempDir resolves a fixed temp directory path for fixedPath.
+// It returns the path, a boolean indicating whether the directory already existed,
+// and any error encountered. If the directory already exists, the caller can skip copying.
+func getOrCreateFixedTempDir(fixedPath string) (string, bool, error) {
+	tempDir := filepath.Join(os.TempDir(), fixedPath)
+
+	// Early exit if the directory already exists to avoid unnecessary copying and potential conflicts
+	_, err := os.Stat(tempDir)
+	if err != nil {
+		// We expect an error when the directory doesn't exist,
+		// but if it's a different error, we should return it
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", false, err
+		}
+
+		// Create the directory if it doesn't exist
+		if mkdirErr := os.MkdirAll(tempDir, 0755); mkdirErr != nil {
+			return "", false, mkdirErr
+		}
+
+		return tempDir, false, nil
+	}
+
+	// The directory already exists, so we can skip copying and return it directly
+	return tempDir, true, nil
 }
 
 // CopyDir recursively copies a directory from src to dst
