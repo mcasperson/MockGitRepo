@@ -43,13 +43,19 @@ func SaveCredentials(username, password string) error {
 		}
 	}
 
+	hashPassword, err := security.Argon2Hash(password)
+
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
 	entity := credentialEntity{
 		Entity: aztables.Entity{
 			PartitionKey: "credentials",
 			RowKey:       username,
 		},
 		Username: username,
-		Password: security.GetSha256(password),
+		Password: hashPassword,
 	}
 
 	data, err := json.Marshal(entity)

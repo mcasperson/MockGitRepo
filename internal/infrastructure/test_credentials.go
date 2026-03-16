@@ -41,5 +41,5 @@ func TestCredentials(username, password string) (bool, error) {
 		return false, fmt.Errorf("failed to unmarshal credential entity: %w", err)
 	}
 
-	return entity.Password == security.GetSha256(password), nil
+	return security.VerifyArgon2Hash(entity.Password, password)
 }
