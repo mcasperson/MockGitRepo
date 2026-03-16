@@ -10,10 +10,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY *.go ./
+COPY entry/ ./entry/
+COPY internal/ ./internal/
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gin-git-server .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gin-git-server entry/web/git.go
 
 # Stage 2: Create minimal runtime image
 FROM alpine:latest

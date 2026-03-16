@@ -29,4 +29,5 @@ dist/
 *~
 
 gin-git-server
+git
 repotemplate/
