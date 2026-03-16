@@ -86,8 +86,9 @@ func GitHTTPBackend(c *gin.Context) {
 		return
 	}
 
-	// Defer deletion of the temporary directory
-	if !userExists {
+	if userExists {
+		logging.Logger.Info("Found user " + username + ". Delaying repo cleanup")
+	} else {
 		defer func() {
 			err := os.RemoveAll(tempRepoPath)
 			if err != nil {
