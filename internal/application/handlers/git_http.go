@@ -28,6 +28,7 @@ const (
 	maxRequestSize      = 128 * 1024 // 128KB in bytes
 	processTemplatesDir = "process-templates"
 	policiesDir         = "policies"
+	maxTempDirs         = 20
 )
 
 // GitHTTPBackend handles Git HTTP requests using git-http-backend CGI
@@ -119,9 +120,15 @@ func GitHTTPBackend(c *gin.Context) {
 				logging.Logger.Info("Deleted temp directory",
 					zap.String("tempRepoPath", tempRepoPath))
 			}
+		}()
+	}
 
-			// If we created a new temp dir, we clean up an old one if there are too many.
-			files.LimitTempDirs(20)
+	// If we created a new temp dir, we clean up an old one if there are too many.
+	if created {
+		defer func() {
+			go func() {
+				files.LimitTempDirs(maxTempDirs)
+			}()
 		}()
 	}
 
