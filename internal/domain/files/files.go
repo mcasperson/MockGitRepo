@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/mcasperson/MockGitRepo/internal/domain/logging"
@@ -17,8 +16,6 @@ import (
 const (
 	gitRepoPrefix = "git-repo-"
 )
-
-var limitTempDirsMu sync.Mutex
 
 // CopyRepoToTemp copies the repository directory to a temporary directory
 // repoPath is the path to the original repository
@@ -172,11 +169,6 @@ func CopyFile(src, dst string) error {
 // LimitTempDirs ensures there are no more than maxDirs temp directories
 // by deleting the oldest directories if the limit is exceeded
 func LimitTempDirs(maxDirs int) {
-	if !limitTempDirsMu.TryLock() {
-		return
-	}
-	defer limitTempDirsMu.Unlock()
-
 	tmpDir := "/tmp"
 
 	logging.Logger.Debug("Checking temp directory count limit",
