@@ -116,3 +116,7 @@ git config --bool core.bare false; git add .; git commit -m "Update sample repo"
 ```bash
 curl -X PUT -H "X_MOCKGIT_SERVICE_API_KEY: tokengoeshere" -d '{"data":{"type: "credentials", "id": "user1", "attributes": {"password": "blah"}}}' http://localhost:8080/api/credentials 
 ```
+
+## Deployment notes
+
+You must enable session affinity (sticky sessions) on the Azure App Service to ensure that all requests from a client go to the same instance of the application. This is necessary because the application creates and maintains a temporary copy of the Git repo for each user, and switching between instances means you persist changes to one instance and then read the repo from another instance where the changes don't exist.
