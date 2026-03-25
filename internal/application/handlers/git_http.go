@@ -96,7 +96,7 @@ func GitHTTPBackend(c *gin.Context) {
 	if created {
 		logging.Logger.Info("Created new directory for " + username + ".")
 	} else {
-		logging.Logger.Info("Directory for " + username + "already exists.")
+		logging.Logger.Info("Directory for " + username + " already exists.")
 	}
 
 	if userExists {
