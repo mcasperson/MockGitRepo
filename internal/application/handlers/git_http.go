@@ -86,14 +86,8 @@ func GitHTTPBackend(c *gin.Context) {
 		return
 	}
 
-	if !userExists {
-		logging.Logger.Error("User not found in git repository")
-		c.String(http.StatusUnauthorized, "User not found in git repository")
-		return
-	}
-
 	// Copy repository to temporary directory
-	tempRepoPath, created, err := files.CopyRepoToTemp(repoPath, username)
+	tempRepoPath, created, err := files.CopyRepoToTemp(repoPath, userExists, username)
 	if err != nil {
 		logging.Logger.Error("Failed to copy repository to temp",
 			zap.String("repoPath", repoPath),
