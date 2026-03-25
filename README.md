@@ -93,7 +93,7 @@ git pull
 6. Run `git add .` and `git commit -m "Add new sample repo"`
 7. Run `git checkout -b main` to create the main branch
 8. Run `git config --bool core.bare true`
-9. Run `git config receive.denyNonFastForwards false`
+9. Run `git config receive.denyNonFastForwards false` to allow non-fast-forward pushes (e.g. force pushes)
 10. Run `packtemplate.sh` to pack the template repo into `repotemplate.tar.bz2`
 
 ## Update sample repo
