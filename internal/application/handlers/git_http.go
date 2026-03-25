@@ -8,13 +8,16 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/mcasperson/MockGitRepo/internal/domain/configuration"
 	"github.com/mcasperson/MockGitRepo/internal/domain/files"
+	"github.com/mcasperson/MockGitRepo/internal/domain/git"
 	"github.com/mcasperson/MockGitRepo/internal/domain/logging"
 	"github.com/mcasperson/MockGitRepo/internal/domain/security"
 	"github.com/mcasperson/MockGitRepo/internal/infrastructure"
@@ -84,13 +87,30 @@ func GitHTTPBackend(c *gin.Context) {
 	}
 
 	// Copy repository to temporary directory
-	tempRepoPath, err := files.CopyRepoToTemp(repoPath, userExists, username)
+	tempRepoPath, created, err := files.CopyRepoToTemp(repoPath, userExists, username)
 	if err != nil {
 		logging.Logger.Error("Failed to copy repository to temp",
 			zap.String("repoPath", repoPath),
 			zap.Error(err))
 		c.String(http.StatusInternalServerError, "Failed to copy repository: %s", err)
 		return
+	}
+
+	// Rename the platform hub files to prevent Octopus tracking the history.
+	// This is only done on the first request when the repo was just configured.
+	if created {
+		gitPath := strings.Split(strings.TrimLeft(c.Param("path"), "/"), "/")[0]
+		err = git.MoveFileAndPush(
+			"http://localhost:"+configuration.GetPort()+"/repo/"+gitPath,
+			username,
+			password,
+			path.Join(".octopus", "process-templates", "platform-postdeploy-hook.ocl"),
+			path.Join(".octopus", "process-templates", "platform-postdeploy-hook-"+uuid.New().String()+".ocl"),
+			"Rename platform hub file")
+		if err != nil {
+			// This is a best effort
+			logging.Logger.Error("Failed to rename ocl files", zap.Error(err))
+		}
 	}
 
 	if userExists {
