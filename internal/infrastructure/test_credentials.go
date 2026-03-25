@@ -9,17 +9,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
-	"github.com/mcasperson/MockGitRepo/internal/domain/configuration"
 	"github.com/mcasperson/MockGitRepo/internal/domain/security"
 )
 
 // TestCredentials returns true if the given username and password match the
 // stored entry in the "credentials" Azure Storage Table, false otherwise.
 func TestCredentials(username, password string) (bool, error) {
-	if configuration.GetDisableAuth() {
-		return true, nil
-	}
-
 	connStr := GetStorageConnectionString()
 	if connStr == "" {
 		return false, fmt.Errorf("AzureWebJobsStorage environment variable is not set")
