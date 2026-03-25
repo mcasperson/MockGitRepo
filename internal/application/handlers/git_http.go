@@ -84,7 +84,7 @@ func GitHTTPBackend(c *gin.Context) {
 	}
 
 	// Copy repository to temporary directory
-	tempRepoPath, err := files.CopyRepoToTemp(repoPath, userExists, username)
+	tempRepoPath, created, err := files.CopyRepoToTemp(repoPath, userExists, username)
 	if err != nil {
 		logging.Logger.Error("Failed to copy repository to temp",
 			zap.String("repoPath", repoPath),
@@ -93,11 +93,15 @@ func GitHTTPBackend(c *gin.Context) {
 		return
 	}
 
+	if created {
+		logging.Logger.Info("Created new directory for " + username + ".")
+	}
+
 	if userExists {
-		logging.Logger.Info("Found user " + username + ". Delaying repo cleanup")
+		logging.Logger.Info("Found user " + username + ". Delaying repo cleanup.")
 	} else {
 		defer func() {
-			logging.Logger.Info("Anonymous user " + username + " will be cleaned up immediately after request")
+			logging.Logger.Info("Anonymous user " + username + " will be cleaned up immediately after request.")
 
 			err := os.RemoveAll(tempRepoPath)
 			if err != nil {

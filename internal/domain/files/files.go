@@ -22,9 +22,9 @@ const (
 // fixedLocation indicates whether to use a fixed location for the temp directory
 // fixedPath is the name of the fixed directory to use if fixedLocation is true
 // Returns the path to the temporary directory
-func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (string, error) {
+func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (string, bool, error) {
 	if fixedLocation && !security.IsValidUsernameOrPath(fixedPath) {
-		return "", errors.New("invalid repository path: special characters are not allowed")
+		return "", false, errors.New("invalid repository path: special characters are not allowed")
 	}
 
 	var tempDir string
@@ -33,10 +33,10 @@ func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (stri
 		var err error
 		tempDir, exists, err = getOrCreateFixedTempDir(fixedPath)
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 		if exists {
-			return tempDir, nil
+			return tempDir, false, nil
 		}
 	} else {
 		// Create a temporary directory
@@ -45,7 +45,7 @@ func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (stri
 
 		if err != nil {
 			logging.Logger.Error("Failed to create temp directory", zap.Error(err))
-			return "", err
+			return "", false, err
 		}
 	}
 
@@ -60,13 +60,13 @@ func CopyRepoToTemp(repoPath string, fixedLocation bool, fixedPath string) (stri
 			zap.String("dst", tempDir),
 			zap.Error(err))
 		os.RemoveAll(tempDir)
-		return "", err
+		return "", false, err
 	}
 
 	logging.Logger.Info("Repository copied successfully",
 		zap.String("tempDir", tempDir))
 
-	return tempDir, nil
+	return tempDir, true, nil
 }
 
 // getOrCreateFixedTempDir resolves a fixed temp directory path for fixedPath.
