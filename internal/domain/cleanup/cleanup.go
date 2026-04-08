@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-var cleanupMu sync.Mutex
+// GitHTTPBackendMu coordinates active git HTTP requests with the cleanup goroutine.
+// GitHTTPBackend holds a read lock for each in-flight request; cleanOldTempDirs
+// attempts the write lock and skips if it cannot be obtained.
+var GitHTTPBackendMu sync.RWMutex
 
 const (
 	cleanupInterval = 1 * time.Hour
@@ -30,10 +33,10 @@ func StartTempDirCleanup() {
 // cleanOldTempDirs deletes top-level directories in os.TempDir() that are older
 // than maxTempDirAge.
 func cleanOldTempDirs() {
-	if !cleanupMu.TryLock() {
+	if !GitHTTPBackendMu.TryLock() {
 		return
 	}
-	defer cleanupMu.Unlock()
+	defer GitHTTPBackendMu.Unlock()
 	entries, err := os.ReadDir(os.TempDir())
 	if err != nil {
 		return
